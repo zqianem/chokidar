@@ -133,7 +133,7 @@ const runTests = (baseopts) => {
   });
 
   describe('watch a directory', () => {
-    let readySpy, rawSpy, watcher, watcher2;
+    let readySpy, rawSpy, watcher;
     beforeEach(() => {
       options.ignoreInitial = true;
       options.alwaysStat = true;
@@ -204,8 +204,6 @@ const runTests = (baseopts) => {
       });
     });
     it('should emit thirtythree `add` events when thirtythree files were added in nine directories', async () => {
-      await watcher.close();
-
       const test1Path = getFixturePath('add1.txt');
       const testb1Path = getFixturePath('b/add1.txt');
       const testc1Path = getFixturePath('c/add1.txt');
@@ -248,8 +246,7 @@ const runTests = (baseopts) => {
       fs.mkdirSync(getFixturePath('h'), PERM_ARR);
       fs.mkdirSync(getFixturePath('i'), PERM_ARR);
 
-      watcher2 = chokidar_watch().on(EV_READY, readySpy).on(EV_RAW, rawSpy);
-      const spy = await aspy(watcher2, EV_ADD, null, true);
+      const spy = await aspy(watcher, EV_ADD, null, true);
 
       await write(test1Path, dateNow());
       await write(test2Path, dateNow());
@@ -2064,7 +2061,7 @@ const runTests = (baseopts) => {
       await fs_mkdir(packagesPath);
 
       // Init chokidar
-      const watcher = chokidar.watch([]);
+      const watcher = chokidar_watch([]);
       const events = [];
 
       // Add more than 10 folders to cap consolidateThreshhold
@@ -2098,41 +2095,36 @@ const runTests = (baseopts) => {
     it('should detect changes to folders, even if they were deleted before', async () => {
       const id = subdirId.toString();
       const relativeWatcherDir = sysPath.join(FIXTURES_PATH_REL, id, 'test');
-      const watcher = chokidar.watch(relativeWatcherDir, {
-        persistent: true,
-      });
-      try {
-        const events = [];
-        watcher.on('all', (event, path) =>
-          events.push(`[ALL] ${event}: ${path}`)
-        );
-        const testSubDir = sysPath.join(relativeWatcherDir, 'dir');
-        const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
+      const watcher = chokidar_watch(relativeWatcherDir);
 
-        // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
-        await delay();
-        await fs_mkdir(relativeWatcherDir);
-        await fs_mkdir(testSubDir);
-        // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
-        await delay(300);
-        await fs_rmdir(testSubDir);
-        // The following delay is essential otherwise the call of rmdir and mkdir will be equalize
-        await delay(300);
-        await fs_mkdir(testSubDir);
-        await delay(300);
-        await write(testSubDirFile, '');
-        await delay(300);
-        
-        chai.assert.deepStrictEqual(events, [
-          `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test')}`,
-          `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test', 'dir')}`,
-          `[ALL] unlinkDir: ${sysPath.join('test-fixtures', id, 'test', 'dir')}`,
-          `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test', 'dir')}`,
-          `[ALL] add: ${sysPath.join('test-fixtures', id, 'test', 'dir', 'file')}`,
-        ]);
-      } finally {
-        watcher.close();
-      }
+      const events = [];
+      watcher.on('all', (event, path) =>
+        events.push(`[ALL] ${event}: ${path}`)
+      );
+      const testSubDir = sysPath.join(relativeWatcherDir, 'dir');
+      const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
+
+      // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
+      await delay();
+      await fs_mkdir(relativeWatcherDir);
+      await fs_mkdir(testSubDir);
+      // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
+      await delay(300);
+      await fs_rmdir(testSubDir);
+      // The following delay is essential otherwise the call of rmdir and mkdir will be equalize
+      await delay(300);
+      await fs_mkdir(testSubDir);
+      await delay(300);
+      await write(testSubDirFile, '');
+      await delay(300);
+
+      chai.assert.deepStrictEqual(events, [
+        `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test')}`,
+        `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test', 'dir')}`,
+        `[ALL] unlinkDir: ${sysPath.join('test-fixtures', id, 'test', 'dir')}`,
+        `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test', 'dir')}`,
+        `[ALL] add: ${sysPath.join('test-fixtures', id, 'test', 'dir', 'file')}`,
+      ]);
     });
 
     it('should detect changes to symlink folders, even if they were deleted before', async () => {
@@ -2140,40 +2132,35 @@ const runTests = (baseopts) => {
       const relativeWatcherDir = sysPath.join(FIXTURES_PATH_REL, id, 'test');
       const linkedRelativeWatcherDir = sysPath.join(FIXTURES_PATH_REL, id, 'test-link');
       await fs_symlink(sysPath.resolve(relativeWatcherDir), linkedRelativeWatcherDir);
-      const watcher = chokidar.watch(linkedRelativeWatcherDir, {
-        persistent: true,
-      });
-      try {
-        const events = [];
-        watcher.on('all', (event, path) =>
-          events.push(`[ALL] ${event}: ${path}`)
-        );
-        const testSubDir = sysPath.join(relativeWatcherDir, 'dir');
-        const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
+      const watcher = chokidar_watch(linkedRelativeWatcherDir);
 
-        // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
-        await delay();
-        await fs_mkdir(relativeWatcherDir);
-        await fs_mkdir(testSubDir);
-        // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
-        await delay(300);
-        await fs_rmdir(testSubDir);
-        // The following delay is essential otherwise the call of rmdir and mkdir will be equalize
-        await delay(300);
-        await fs_mkdir(testSubDir);
-        await write(testSubDirFile, '');
-        await delay(300);
-        
-        chai.assert.deepStrictEqual(events, [
-          `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link')}`,
-          `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link', 'dir')}`,
-          `[ALL] unlinkDir: ${sysPath.join('test-fixtures', id, 'test-link', 'dir')}`,
-          `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link', 'dir')}`,
-          `[ALL] add: ${sysPath.join('test-fixtures', id, 'test-link', 'dir', 'file')}`,
-        ]);
-      } finally {
-        watcher.close();
-      }
+      const events = [];
+      watcher.on('all', (event, path) =>
+        events.push(`[ALL] ${event}: ${path}`)
+      );
+      const testSubDir = sysPath.join(relativeWatcherDir, 'dir');
+      const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
+
+      // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
+      await delay();
+      await fs_mkdir(relativeWatcherDir);
+      await fs_mkdir(testSubDir);
+      // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
+      await delay(300);
+      await fs_rmdir(testSubDir);
+      // The following delay is essential otherwise the call of rmdir and mkdir will be equalize
+      await delay(300);
+      await fs_mkdir(testSubDir);
+      await write(testSubDirFile, '');
+      await delay(300);
+
+      chai.assert.deepStrictEqual(events, [
+        `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link')}`,
+        `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link', 'dir')}`,
+        `[ALL] unlinkDir: ${sysPath.join('test-fixtures', id, 'test-link', 'dir')}`,
+        `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link', 'dir')}`,
+        `[ALL] add: ${sysPath.join('test-fixtures', id, 'test-link', 'dir', 'file')}`,
+      ]);
     });
   });
 
