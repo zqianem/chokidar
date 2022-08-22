@@ -2107,7 +2107,7 @@ const runTests = (baseopts) => {
       const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
 
       // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
-      await delay(300);
+      await delay(3000);
       await fs_mkdir(relativeWatcherDir);
       await fs_mkdir(testSubDir);
       // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
@@ -2147,7 +2147,7 @@ const runTests = (baseopts) => {
       const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
 
       // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
-      await delay(300);
+      await delay(3000);
       await fs_mkdir(relativeWatcherDir);
       await fs_mkdir(testSubDir);
       // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
