@@ -2096,16 +2096,18 @@ const runTests = (baseopts) => {
       const id = subdirId.toString();
       const relativeWatcherDir = sysPath.join(FIXTURES_PATH_REL, id, 'test');
       const watcher = chokidar_watch(relativeWatcherDir);
+      const spy = sinon.spy();
 
       const events = [];
-      watcher.on('all', (event, path) =>
-        events.push(`[ALL] ${event}: ${path}`)
-      );
+      watcher.on('all', (event, path) => {
+        events.push(`[ALL] ${event}: ${path}`);
+        spy();
+      });
       const testSubDir = sysPath.join(relativeWatcherDir, 'dir');
       const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
 
       // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
-      await delay();
+      await delay(300);
       await fs_mkdir(relativeWatcherDir);
       await fs_mkdir(testSubDir);
       // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
@@ -2117,6 +2119,7 @@ const runTests = (baseopts) => {
       await delay(300);
       await write(testSubDirFile, '');
       await delay(300);
+      await waitFor([[spy, 5]]);
 
       chai.assert.deepStrictEqual(events, [
         `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test')}`,
@@ -2133,16 +2136,18 @@ const runTests = (baseopts) => {
       const linkedRelativeWatcherDir = sysPath.join(FIXTURES_PATH_REL, id, 'test-link');
       await fs_symlink(sysPath.resolve(relativeWatcherDir), linkedRelativeWatcherDir);
       const watcher = chokidar_watch(linkedRelativeWatcherDir);
+      const spy = sinon.spy();
 
       const events = [];
-      watcher.on('all', (event, path) =>
-        events.push(`[ALL] ${event}: ${path}`)
-      );
+      watcher.on('all', (event, path) => {
+        events.push(`[ALL] ${event}: ${path}`);
+        spy();
+      });
       const testSubDir = sysPath.join(relativeWatcherDir, 'dir');
       const testSubDirFile = sysPath.join(relativeWatcherDir, 'dir', 'file');
 
       // Command sequence from https://github.com/paulmillr/chokidar/issues/1042.
-      await delay();
+      await delay(300);
       await fs_mkdir(relativeWatcherDir);
       await fs_mkdir(testSubDir);
       // The following delay is essential otherwise the call of mkdir and rmdir will be equalize
@@ -2153,6 +2158,7 @@ const runTests = (baseopts) => {
       await fs_mkdir(testSubDir);
       await write(testSubDirFile, '');
       await delay(300);
+      await waitFor([[spy, 5]]);
 
       chai.assert.deepStrictEqual(events, [
         `[ALL] addDir: ${sysPath.join('test-fixtures', id, 'test-link')}`,
